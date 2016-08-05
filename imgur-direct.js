@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         imgur.direct
 // @namespace    imgurdir
-// @version      0.1.0
+// @version      0.2.0
 // @description  Adds image direct links for imgur uploads.
 // @author       Jakub Rychecký <jakub@rychecky.cz>
 // @license      WTFPL 2
@@ -9,46 +9,125 @@
 // ==/UserScript==
 
 
-create_direct();
 
 
 
 
-function create_direct(){
-    $('.post-image-container').each(function(){ // Every image container
-      var img = $(this);
-        
-      if(!has_direct_link(img) && is_image_ready(img)){ // Doesn't have direct link yet and image is fully uploaded...
-          write_direct_link(img);   
-      }
-    });
-    
-    setTimeout(create_direct, 500); // Let's repeat
+/*
+ * Worker timeout in miliseconds, 500 ms is recommended
+ * @type Number
+ */
+var timeout = 500;
+
+
+/**
+ * Prefix for direct link (choose http or https - https is recommended)
+ * @type String
+ */
+var prefix = 'https';
+
+
+
+
+
+
+
+
+
+/**
+ * DOM initialization runs script worker which
+ * @returns {undefined}
+ */
+
+$(function(){
+  imgur_direct_worker(); // The first run of script worker
+});
+
+
+
+
+
+/**
+ * Main script worker. Checks new images and put direct links to them. Repeats a few miliseconds again.
+ * @returns {undefined}
+ */
+
+function imgur_direct_worker(){
+  $('.post-image-container').each(function(){ // Every image container on imgur upload page...
+    var img = $(this); // Image container itself
+
+    if(!has_direct_link(img) && is_image_ready(img)){ // Doesn't have direct link yet and image is fully uploaded...
+      write_direct_link(img); // Create textarea with direct link  
+    }
+  });
+
+  setTimeout(imgur_direct_worker, timeout); // Let's repeat
 }
 
 
+
+
+
+/**
+ * Creates single direct link for image inside of image container.
+ * @param {JQuery} img Image container jQuery element
+ * @returns {String} Direct link to the image
+ */
 
 function get_direct_link(img){
-   var link = img.find('a.zoom').attr('href'); // Link from zoom
-   link = 'http:'+link;
+   if(img.find('.zoom').length > 0){ // For larger image which have zoom (larger resolution)...
+      var link = img.find('.image .zoom').attr('href'); // Link from zoom
+   }else{ // ...smaller image with no zoom...
+      var link = img.find('.image img').attr('src'); // Link from image iself
+   }
+   
+   link = 'https:'+link; // Link with https:
     
-   return link;
+   return link; // Returns link
 }
 
+
+
+
+
+/**
+ * Is image ready? Is it fully uploaded yet?
+ * @param {JQuery} img Image container jQuery element
+ * @returns {Boolean} Is image ready?
+ */
 
 function is_image_ready(img){
-  var link = get_direct_link(img);
+  var link = get_direct_link(img); // Direct link from image
     
-  return link.indexOf('undefined') == -1 && link.indexOf('blob') == -1;
+  return link.indexOf('undefined') == -1 && link.indexOf('blob') == -1; // If it DOES NOT contain 'undefined' or 'blob' strings, it's ready
 }
 
+
+
+
+
+/**
+ * Checks if image container has direct link already. No need to write another one then.
+ * @param {JQuery} img Image container jQuery element
+ * @returns {Boolean} Has direct link already?
+ */
 
 function has_direct_link(img){
-  return img.find('.direct').length > 0;
+  return img.find('.direct').length > 0; // Is direct link inside image container?
 }
 
+
+
+
+
+/**
+ * Writes single textarea with image direct link inside imgur page.
+ * @param {JQuery} img Image container jQuery element
+ * @returns {undefined}
+ */
+
 function write_direct_link(img){
-   var css = { // CSS for textarea
+   var css = { // CSS for direct link textarea
      'width': '100%',
      'background': '#2C2F34',
      'text-align': 'center',
@@ -56,11 +135,11 @@ function write_direct_link(img){
      'font-size': '0.8em',
      'height': '28px',
      'margin-bottom': '0px'
-   }
+   };
     
-   var html = $('<textarea onclick="$(this).select()">'+get_direct_link(img)+'</textarea>'); // Direct link textarea
+   var html = $('<textarea onclick="$(this).select()">'+get_direct_link(img)+'</textarea>'); // Direct link textarea as JQuery element
     
-   html.addClass('direct').css(css);
+   html.addClass('direct').css(css); // Putting class and CSS for textarea
     
-   img.prepend(html);
+   img.prepend(html); // Writes textarea
 }
