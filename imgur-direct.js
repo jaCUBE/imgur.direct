@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         imgur.direct
 // @namespace    imgurdir
-// @version      0.2.0
+// @version      0.2.1
 // @description  Adds image direct links for imgur uploads.
 // @author       Jakub Rychecký <jakub@rychecky.cz>
 // @license      WTFPL 2
@@ -15,14 +15,14 @@
 
 /*
  * Worker timeout in miliseconds, 500 ms is recommended
- * @type Number
+ * @type {Number}
  */
 var timeout = 500;
 
 
 /**
  * Prefix for direct link (choose http or https - https is recommended)
- * @type String
+ * @type {String}
  */
 var prefix = 'https';
 
@@ -56,7 +56,7 @@ function imgur_direct_worker(){
   $('.post-image-container').each(function(){ // Every image container on imgur upload page...
     var img = $(this); // Image container itself
 
-    if(!has_direct_link(img) && is_image_ready(img)){ // Doesn't have direct link yet and image is fully uploaded...
+    if(!has_direct_link(img) && is_image_ready(img)){ // Doesn't have direct link yet and image is fully uploaded... 
       write_direct_link(img); // Create textarea with direct link  
     }
   });
@@ -75,10 +75,12 @@ function imgur_direct_worker(){
  */
 
 function get_direct_link(img){
-   if(img.find('.zoom').length > 0){ // For larger image which have zoom (larger resolution)...
-      var link = img.find('.image .zoom').attr('href'); // Link from zoom
+  var zoom = img.find('.image .zoom, .post-image .zoom'); // Zoom element for larger images (difference way to get direct link)
+  
+   if(zoom.length > 0){ // If it is larger image having zoom...
+      var link = zoom.attr('href'); // Link from zoom iself
    }else{ // ...smaller image with no zoom...
-      var link = img.find('.image img').attr('src'); // Link from image iself
+      var link = img.find('.image img, .post-image img').attr('src'); // Link from image iself
    }
    
    link = 'https:'+link; // Link with https:
@@ -98,7 +100,7 @@ function get_direct_link(img){
 
 function is_image_ready(img){
   var link = get_direct_link(img); // Direct link from image
-    
+
   return link.indexOf('undefined') == -1 && link.indexOf('blob') == -1; // If it DOES NOT contain 'undefined' or 'blob' strings, it's ready
 }
 
