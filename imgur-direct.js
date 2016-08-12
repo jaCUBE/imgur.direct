@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         imgur.direct
 // @namespace    imgurdir
-// @version      0.2.1
+// @version      1.0.0
 // @description  Adds image direct links for imgur uploads.
 // @author       Jakub Rychecký <jakub@rychecky.cz>
 // @license      WTFPL 2
@@ -56,7 +56,7 @@ function imgur_direct_worker(){
   $('.post-image-container').each(function(){ // Every image container on imgur upload page...
     var img = $(this); // Image container itself
 
-    if(!has_direct_link(img) && is_image_ready(img)){ // Doesn't have direct link yet and image is fully uploaded... 
+    if(!has_direct_link(img) && (is_image_ready(img) || is_video(img))){ // Doesn't have direct link yet and image is fully uploaded (or it's video)... 
       write_direct_link(img); // Create textarea with direct link  
     }
   });
@@ -69,13 +69,45 @@ function imgur_direct_worker(){
 
 
 /**
- * Creates single direct link for image inside of image container.
+ * Creates single direct link for image/video inside of its container.
  * @param {JQuery} img Image container jQuery element
  * @returns {String} Direct link to the image
  */
 
 function get_direct_link(img){
-  var zoom = img.find('.image .zoom, .post-image .zoom'); // Zoom element for larger images (difference way to get direct link)
+  if(is_video(img)){ // Video direct link for videos...
+    return get_direct_link_video(img); 
+  }else{ // Everything else is image, let's give it image direct link... ^^
+   return get_direct_link_image(img);
+  }
+}
+
+
+
+
+
+/**
+ * Generates direct MP4 link to video of container.
+ * @param {type} img Image container jQuery element (contents video in this case)
+ * @returns {unresolved}
+ */
+
+function get_direct_link_video(img){
+  return img.find('meta[itemprop="contentURL"]').attr('content'); // Returns content of video meta tag   
+}
+
+
+
+
+
+/**
+ * 
+ * @param {type} img
+ * @returns {String}
+ */
+
+function get_direct_link_image(img){
+var zoom = img.find('.image .zoom, .post-image .zoom'); // Zoom element for larger images (difference way to get direct link)
   
    if(zoom.length > 0){ // If it is larger image having zoom...
       var link = zoom.attr('href'); // Link from zoom iself
@@ -144,4 +176,18 @@ function write_direct_link(img){
    html.addClass('direct').css(css); // Putting class and CSS for textarea
     
    img.prepend(html); // Writes textarea
+}
+
+
+
+
+
+/**
+ * Checks if content of container is video (gifv, mp4..).
+ * @param {JQuery} img Image container jQuery element
+ * @returns {Boolean} Is this container of video?
+ */
+
+function is_video(img){
+   return img.find('.video-container').length > 0; // Video has .video-container
 }
